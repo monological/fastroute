@@ -36,8 +36,9 @@ graph theory parlance.
 - Node refers to a vertex
 - Arc refers to an edge
 
+## CSV Specs
 
-## Graph CSV Spec
+#### graph.csv
 
 ```csv
 <src_node_id>,<x_coord>,<y_coord>,<cost>,<arc_id>:<is_directional>:<is_excluded>:<dst_node_id>,...,EOL
@@ -45,7 +46,7 @@ graph theory parlance.
 
 **Note:** arc_id is a unique id that indexes a (src_node, dst_node) pair.
 
-## Unrouted CSV Spec
+#### unrouted.csv
 
 ```csv
 <name>,<src_node_id>,<num_dst_nodes>,<dst_node_id>,...,EOL

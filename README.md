@@ -14,8 +14,9 @@ Fastroute is a general purpose graph router which utilizes the A\* search algori
 
 ## How do I demo it?
 
-There are three helper python scripts that automatically generate random graphs, randomly
-routes a path and displays the graph using matplotlib. 
+There are three helper python scripts that automatically generates a random graph,
+routes a path and displays the graph. However, the code snippet below will run everything
+for you.
 
 Required Python modules:
 
@@ -25,6 +26,7 @@ Required Python modules:
 To run everything, simply execute:
 
 ```bash
+make all
 ./run.sh
 ```
 

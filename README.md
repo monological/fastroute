@@ -3,8 +3,6 @@
 
 Fastroute is a general purpose graph router which utilizes the A\* search algorithm.
 
-
-
 ## How to use it?
 
 1. Build the code by running make.
@@ -30,11 +28,22 @@ To run everything, simply execute:
 ./run.sh
 ```
 
+## Terminology
+
+The terminology used by fastroute is a little different than normal
+graph theory parlance.
+
+- Node refers to a vertex
+- Arc refers to an edge
+
+
 ## Graph CSV Spec
 
 ```csv
 <src_node_id>,<x_coord>,<y_coord>,<cost>,<arc_id>:<is_directional>:<is_excluded>:<dst_node_id>,...,EOL
 ```
+
+**Note:** arc_id is a unique id that indexes a (src_node, dst_node) pair.
 
 ## Unrouted CSV Spec
 

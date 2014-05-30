@@ -1,0 +1,6 @@
+*.pyc
+*.db
+*.o
+*.csv
+fastroute
+create_db

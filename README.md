@@ -1,7 +1,7 @@
 
 ## What is this?
 
-Fastroute is a general purpose graph router which utilizes the A\* search algorithm.
+Fastroute is a general purpose graph router written in C, which utilizes the A\* search algorithm.
 
 ## How to use it?
 
@@ -54,6 +54,11 @@ graph theory parlance.
 <name>,<src_node_id>,<num_dst_nodes>,<dst_node_id>,...,EOL
 ```
 
+## License
+
+Copyright 2014 Julian Lupu.
+
+fastroute is free software made available under the MIT License. For details see the LICENSE file.
 
 
 

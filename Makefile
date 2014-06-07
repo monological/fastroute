@@ -22,10 +22,10 @@ $(ODIR)/%.o: $(IDIR)/%.c $(DEPS)
 				$(CC) -c -o $@ $< $(CFLAGS)
 
 fastroute: $(OBJF)
-				$(CC) -o $(BDIR)/$@ $^ $(CFLAGS) -lm
+				$(CC) -o $(BDIR)/$@ $^ $(CFLAGS) -lm -lzmq -lczmq
 
 create_db: $(OBJD)
-				$(CC) -o $(BDIR)/$@ $^ $(CFLAGS) -lm
+				$(CC) -o $(BDIR)/$@ $^ $(CFLAGS) -lm -lzmq -lczmq
 
 .PHONY: clean
 

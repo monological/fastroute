@@ -24,7 +24,7 @@
 #include "main.h"
 
 void usage(char **argv){
-    printf("Usage: %s -d <database> -u <unrouted.csv> -r <routed.csv>\n", argv[0]);
+    printf("Usage: %s -d <database> -u <unrouted.csv> -r <routed.csv> (-p <port>)\n", argv[0]);
 }
 
 int main(int argc, char *argv[]){
@@ -32,6 +32,7 @@ int main(int argc, char *argv[]){
     const char *database_name = NULL;
     const char *unrouted_csv = NULL;
     const char *routed_csv = NULL;
+    int port = -1;
 
     uint32_t opt;
 
@@ -41,7 +42,7 @@ int main(int argc, char *argv[]){
     }
 
     opterr = 0;
-    while((opt = getopt(argc, argv, "d:u:r:")) != -1){
+    while((opt = getopt(argc, argv, "d:u:r:p:")) != -1){
         switch(opt){
             case 'd':
                 database_name = optarg;
@@ -51,6 +52,9 @@ int main(int argc, char *argv[]){
                 break;
             case 'r':
                 routed_csv = optarg;
+                break;
+            case 'p':
+                port = atoi(optarg);
                 break;
             case '?':
                 usage(argv);
@@ -174,6 +178,10 @@ int main(int argc, char *argv[]){
     Usage *usg;
     usg = new_usage(graph);
     Expander *expander = new_expander(graph, usg);
+    if(port > 0){
+        turn_on_streaming(port, expander);
+    }
+
 
     puts("Preparing nets for routing...");
     Net *net;

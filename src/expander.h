@@ -13,6 +13,8 @@
 #include "path.h"
 #include "usage.h"
 
+#include <czmq.h>
+
 #define MAX_PATHS 1
 #define MAX_DEPTH 1000000
 
@@ -45,7 +47,19 @@ struct _expander{
     Node *src_node;
     Node **dst_nodes;
     uint32_t num_dst_nodes;
-    pqueue_t *exp_nodes;
+    pqueue_t *queue;
+
+    /*
+     * zeromq vars used for streaming paths as
+     * they are routed in real time.
+     *
+     */
+    bool should_stream;
+    int stream_port;
+    zctx_t *stream_ctx;
+    void *stream_writer;
+
+
 };
 typedef struct _expander Expander;
 
@@ -56,6 +70,7 @@ typedef enum {
 } expanderStatus;
 
 Expander *new_expander(Graph *graph, Usage *usage);
+void turn_on_streaming(int port, Expander *expander);
 void free_expander(Expander *expander);
 
 expanderStatus expand(
@@ -64,7 +79,8 @@ expanderStatus expand(
     uint32_t num_dst_nodes,
     Path ***paths,
     uint32_t *num_paths,
-    Expander *expander);
+    Expander *expander
+);
 
 
 

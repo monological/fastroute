@@ -109,19 +109,23 @@ static void set_position(void *a, size_t position){
     ((ExpNode *)a)->position = position;
 }
 
-void _init_exp_nodes(Expander *expander){
+/*
+ * Initialize the priority queue for the expander.
+ *
+ */
+void _init_queue(Expander *expander){
     if(expander == NULL || expander->graph == NULL){
-        puts("Error: _init_exp_nodes expander or graph is null.");
+        puts("Error: _init_queue expander or graph is null.");
         exit(1);
     }
-    expander->exp_nodes = pqueue_init(
+    expander->queue = pqueue_init(
             (size_t)get_num_nodes(expander->graph),
             cmp_priority,
             get_priority,
             set_priority,
             get_position,
             set_position);
-    if(expander->exp_nodes == NULL){
+    if(expander->queue == NULL){
         puts("Error: failed to malloc priority queue.");
         exit(1);
     }
@@ -147,13 +151,40 @@ Expander *new_expander(Graph *graph, Usage *usage){
     expander->src_node = NULL;
     expander->dst_nodes = NULL;
     expander->num_dst_nodes = 0;
-    _init_exp_nodes(expander);
+    _init_queue(expander);
+
+    expander->should_stream = false;
+    expander->stream_port = -1;
+    expander->stream_ctx = NULL;
+    expander->stream_writer = NULL;
     return expander;
 }
 
+/*
+ * Turn on zero-mq steaming on the specified port.
+ *
+ */
+void turn_on_streaming(int port, Expander *expander){
+    expander->should_stream = true;
+    expander->stream_port = port;
+    expander->stream_ctx = zctx_new();
+    expander->stream_writer = zsocket_new(expander->stream_ctx, ZMQ_PUSH);
+    char *interf = "*";
+    int rc = zsocket_bind(
+        expander->stream_writer,
+        "tcp://%s:%d",
+        interf,
+        expander->stream_port
+    );
+    assert (rc == expander->stream_port);
+}
 
 void free_expander(Expander *expander){
-    pqueue_free(expander->exp_nodes);
+    if(expander->should_stream){
+        zsocket_destroy (expander->stream_ctx, expander->stream_writer);
+        zctx_destroy (&(expander->stream_ctx));
+    }
+    pqueue_free(expander->queue);
     free(expander);
 }
 
@@ -163,7 +194,7 @@ void _push(ExpNode *exp_node){
         puts("Error: _push argument is null.");
         exit(1);
     }
-    pqueue_t *pq = exp_node->expander->exp_nodes;
+    pqueue_t *pq = exp_node->expander->queue;
     if(pqueue_insert(pq, exp_node) != 0){
         puts("Error: failed to insert exp node into priority queue.");
         exit(1);
@@ -171,12 +202,12 @@ void _push(ExpNode *exp_node){
 }
 
 ExpNode *_pop(Expander *expander){
-    if(expander == NULL || expander->exp_nodes == NULL){
-        puts("Error: _pop expander or exp_nodes is null.");
+    if(expander == NULL || expander->queue == NULL){
+        puts("Error: _pop expander or queue is null.");
         exit(1);
     }
 
-    pqueue_t *pq = expander->exp_nodes;
+    pqueue_t *pq = expander->queue;
     ExpNode *exp_node;
     exp_node = pqueue_pop(pq);
     return exp_node;
@@ -308,7 +339,7 @@ expanderStatus expand(
                 current->node->data->id, current->cost, current->depth);
 #endif
         arcnodes = get_arcnodes(current->node);
-        for(i=0; i <get_num_arcnodes(current->node); i++){
+        for(i=0; i < get_num_arcnodes(current->node); i++){
             arcnode = arcnodes[i];
             if(_should_push(current, arcnode) == false)
                 continue;
@@ -318,6 +349,41 @@ expanderStatus expand(
                     next->node->data->id, next->cost, next->depth);
 #endif
             next->arcnode = arcnode;
+
+            /*
+             * Stream all the paths on every iteration if flag is set.
+             *
+             */
+            if(expander->should_stream){
+                if((found_arcnodes = calloc(next->depth, sizeof(ArcNode*))) == NULL){
+                    perror("calloc");
+                    exit(1);
+                }
+                _traceback(next, found_arcnodes, next->depth);
+                path = new_path(found_arcnodes, next->depth);
+
+                char *send_str = NULL;
+                if((send_str = malloc(sizeof(char)*path->num_arcnodes*5+3)) == NULL){
+                    perror("malloc");
+                    exit(1);
+                }
+                strcat(send_str, "S_");
+                for(int j=0; j<path->num_arcnodes; j++){
+                    ArcNode *path_arcnode = path->arcnodes[j];
+                    char arc_id[20];
+                    if(j == path->num_arcnodes-1){
+                        sprintf(arc_id, "%i", path_arcnode->arc->data->id);
+                    }else{
+                        sprintf(arc_id, "%i:", path_arcnode->arc->data->id);
+                    }
+                    strcat(send_str, arc_id);
+                }
+                strcat(send_str, "_E");
+                zstr_send(expander->stream_writer, send_str);
+                free(send_str);
+                free(found_arcnodes);
+            }
+
             if(_is_expnode_dst(next)){
                 if((found_arcnodes = calloc(next->depth, sizeof(ArcNode*))) == NULL){
                     perror("calloc");
@@ -362,12 +428,12 @@ expanderStatus expand(
 #endif
 
     // Return expander to original state.
-    while((next = pqueue_pop(expander->exp_nodes)) != NULL){
+    while((next = pqueue_pop(expander->queue)) != NULL){
         if(next == NULL) continue;
         _free_expnode(next);
     }
-    pqueue_free(expander->exp_nodes);
-    _init_exp_nodes(expander);
+    pqueue_free(expander->queue);
+    _init_queue(expander);
     expander->src_node = NULL;
     free(expander->dst_nodes);
     expander->dst_nodes = NULL;

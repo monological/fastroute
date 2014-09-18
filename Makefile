@@ -18,7 +18,13 @@ OBJD = $(patsubst %,$(ODIR)/%,$(_OBJD))
 
 all: fastroute create_db
 
-$(ODIR)/%.o: $(IDIR)/%.c $(DEPS)
+$(ODIR):
+				mkdir -p $(ODIR)
+
+$(BDIR):
+				mkdir -p $(BDIR)
+
+$(ODIR)/%.o: $(IDIR)/%.c $(DEPS) $(BDIR) $(ODIR)
 				$(CC) -c -o $@ $< $(CFLAGS)
 
 fastroute: $(OBJF)
@@ -30,4 +36,4 @@ create_db: $(OBJD)
 .PHONY: clean
 
 clean:
-				rm -f $(ODIR)/*.o *~ core $(BDIR)/create_db $(BDIR)/fastroute
+				rm -rf $(ODIR)/*.o *~ core obj bin *.csv *.db $(BDIR)/create_db $(BDIR)/fastroute

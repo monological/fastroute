@@ -56,7 +56,7 @@ graph theory parlance.
 
 ## License
 
-Copyright 2014 Julian Lupu.
+Copyright 2014 Monological.
 
 fastroute is free software made available under the MIT License. For details see the LICENSE file.
 
